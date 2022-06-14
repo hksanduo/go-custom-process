@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math/rand"
 	"os"
@@ -8,12 +9,16 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 	"unsafe"
 )
 
 var osType = runtime.GOOS
+var hidden = flag.Bool("hidden", false, "hidden arg")
+
+// var time = flag.Int("time", 1000, "time arg")
 
 func main() {
 	// os.Args[0] = "custom name"
@@ -21,18 +26,41 @@ func main() {
 	// time.Sleep(10 * time.Second)
 	// getCurrentDirectory()
 	// selfProecessPath := getCurrentDirectory()
+	// RemoveSelf()
+	flag.Parse()
+	// 调用自身,隐藏自身
+	var testProgressName = os.Args[0]
+	// fmt.Println(os.Args[0])
+	exec.Command(testProgressName, "-hidden=true").Start()
+	// cmd := exec.Command(testProgressName, "-hidden=true")
+	// stdout, _ := cmd.StdoutPipe()
+	// cmd.Start()
 	RemoveSelf()
-	var testProgressName = "./test/test"
-	// exec.Command(testProgressName).Start()
-	exec.Command(testProgressName).Start()
 
-	customName := RandStringRunes(16)
-	SetProcessName(customName)
-	// println("sleeping")
-	// time.Sleep(10 * time.Second)
-	// println("done")
+	// for {
+	// 	tmp := make([]byte, 1024)
+	// 	_, err := stdout.Read(tmp)
+	// 	fmt.Print(string(tmp))
+	// 	if err != nil {
+	// 		break
+	// 	}
+	// }
+	// fmt.Println(*hidden)
+
+	if *hidden {
+		customName := RandStringRunes(16)
+		fmt.Println("customName is ", customName)
+		// 两个一起调用
+		SetProcessName(customName)
+		SetProcessName1(customName)
+		println("sleeping")
+		// sleepTime, _ := strconv.Atoi(*time)
+		time.Sleep(1000 * time.Second)
+		println("done")
+	}
 }
 
+// htop ps 显示进程名已随机，pstree 未显示进程名随机
 func SetProcessName(name string) error {
 	argv0str := (*reflect.StringHeader)(unsafe.Pointer(&os.Args[0]))
 	argv0 := (*[1 << 30]byte)(unsafe.Pointer(argv0str.Data))[:argv0str.Len]
@@ -45,6 +73,7 @@ func SetProcessName(name string) error {
 	return nil
 }
 
+// pstree 显示进程名已随机，ps，htop未显示随机
 func SetProcessName1(name string) error {
 	bytes := append([]byte(name), 0)
 	ptr := unsafe.Pointer(&bytes[0])
@@ -81,10 +110,14 @@ func getCurrentDirectory() string {
 		fmt.Println(err)
 	}
 	if osType == "windows" {
-		dir += "\\" + os.Args[0]
+		fileNameSplit := strings.Split(os.Args[0], "\\")
+		fileName := fileNameSplit[len(fileNameSplit)-1]
+		dir += "\\" + fileName
 	} else {
-		dir += "/" + os.Args[0]
+		fileNameSplit := strings.Split(os.Args[0], "/")
+		fileName := fileNameSplit[len(fileNameSplit)-1]
+		dir += "/" + fileName
 	}
-	fmt.Println(dir)
+	// fmt.Println(dir)
 	return dir
 }
